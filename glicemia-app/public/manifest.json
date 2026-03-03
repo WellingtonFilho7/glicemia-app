@@ -1,0 +1,27 @@
+{
+  "name": "Glicemia App",
+  "short_name": "Glicemia",
+  "description": "Diário de saúde gestacional com monitoramento de glicemia e análise por IA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF9",
+  "theme_color": "#7C3AED",
+  "lang": "pt-BR",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["health", "medical"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
