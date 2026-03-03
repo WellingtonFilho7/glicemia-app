@@ -1,5 +1,3 @@
-"use client";
-
 import type { DailyCheckin } from "@/types";
 
 interface CheckinSummaryProps {
@@ -18,7 +16,7 @@ function ScorePill({
   if (value === null) return null;
 
   const isGood = invert ? value >= 7 : value <= 3;
-  const isMid = value >= 4 && value <= 6;
+  const isMid = !isGood && value <= 6;
 
   const color = isGood
     ? "bg-green-100 text-green-700"
@@ -40,7 +38,7 @@ export function CheckinSummary({ checkin }: CheckinSummaryProps) {
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
         Como você está hoje
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <ScorePill label="Rigidez" value={checkin.stiffness_score} />
         <ScorePill label="Dor" value={checkin.pain_score} />
         <ScorePill label="Energia" value={checkin.energy_score} invert />
@@ -52,7 +50,7 @@ export function CheckinSummary({ checkin }: CheckinSummaryProps) {
         )}
       </div>
       {checkin.notes && (
-        <p className="mt-3 text-sm text-[var(--muted-foreground)] italic">
+        <p className="mt-3 text-sm italic text-[var(--muted-foreground)]">
           &ldquo;{checkin.notes}&rdquo;
         </p>
       )}
