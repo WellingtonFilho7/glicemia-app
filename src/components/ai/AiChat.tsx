@@ -6,17 +6,31 @@ import { Button } from "@/components/ui/button";
 import { AiMessage, type Message } from "./AiMessage";
 import { QuickPrompts } from "./QuickPrompts";
 
-export function AiChat() {
+interface AiChatProps {
+  initialPrompt?: string;
+}
+
+export function AiChat({ initialPrompt }: AiChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const sentInitial = useRef(false);
 
   // Auto-scroll ao surgir nova mensagem
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Auto-send initialPrompt if provided
+  useEffect(() => {
+    if (initialPrompt && !sentInitial.current) {
+      sentInitial.current = true;
+      sendMessage(initialPrompt);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt]);
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();

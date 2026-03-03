@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, AlertCircle, CheckCircle2, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GlucoseInput } from "@/components/glucose/GlucoseInput";
 import { GlucoseTypeSelector } from "@/components/glucose/GlucoseTypeSelector";
+import { getElapsedMinutes } from "@/components/glucose/PostMealTimer";
 import type { GlucoseMealType } from "@/types";
 
 function detectMealType(): GlucoseMealType {
@@ -16,19 +17,47 @@ function detectMealType(): GlucoseMealType {
   return "post_dinner";
 }
 
-export default function GlucemiaPage() {
+function GlucemiaForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromTimer = searchParams.get("from") === "timer";
+
   const [value, setValue] = useState("");
   const [mealType, setMealType] = useState<GlucoseMealType>(detectMealType);
   const [minutesAfterMeal, setMinutesAfterMeal] = useState("60");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limits, setLimits] = useState({ fasting: 95, postprandial: 140 });
+
+  // Load profile limits + auto-fill from timer
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.profile) {
+          setLimits({
+            fasting: d.profile.glucose_limit_fasting ?? 95,
+            postprandial: d.profile.glucose_limit_postprandial ?? 140,
+          });
+        }
+      })
+      .catch(() => {});
+
+    if (fromTimer) {
+      const elapsed = getElapsedMinutes();
+      if (elapsed) setMinutesAfterMeal(String(elapsed));
+      // Timer implies post-meal — use time-based detection but not fasting
+      const current = detectMealType();
+      if (current === "fasting") setMealType("post_breakfast");
+    }
+  }, [fromTimer]);
 
   const numValue = Number(value);
   const hasValue = value !== "" && !isNaN(numValue) && numValue >= 40;
   const isFasting = mealType === "fasting";
-  const isAboveLimit = hasValue && (isFasting ? numValue >= 95 : numValue >= 140);
+  const limitForType = isFasting ? limits.fasting : limits.postprandial;
+  const isAboveLimit = hasValue && numValue >= limitForType;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,9 +102,16 @@ export default function GlucemiaPage() {
         Voltar
       </button>
 
-      <h1 className="mb-6 text-xl font-bold text-[var(--foreground)]">
+      <h1 className="mb-2 text-xl font-bold text-[var(--foreground)]">
         Registrar glicemia
       </h1>
+
+      {fromTimer && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-700">
+          <Timer className="h-4 w-4 flex-shrink-0" />
+          Tempo do timer preenchido automaticamente
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -99,7 +135,7 @@ export default function GlucemiaPage() {
               }`}
             >
               {isAboveLimit
-                ? `Acima do limite (${isFasting ? "95" : "140"} mg/dL)`
+                ? `Acima do limite (${limitForType} mg/dL)`
                 : "Dentro do esperado"}
             </p>
           )}
@@ -178,5 +214,13 @@ export default function GlucemiaPage() {
         </Button>
       </form>
     </div>
+  );
+}
+
+export default function GlucemiaPage() {
+  return (
+    <Suspense fallback={null}>
+      <GlucemiaForm />
+    </Suspense>
   );
 }

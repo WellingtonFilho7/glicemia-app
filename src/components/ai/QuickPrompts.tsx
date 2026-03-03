@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { Sparkles, ClipboardList } from "lucide-react";
 
 const PROMPTS = [
   "Como está minha glicemia esta semana?",
@@ -9,6 +9,7 @@ const PROMPTS = [
   "O que posso melhorar nas refeições?",
   "Minha glicemia de jejum está melhorando?",
   "Resumo geral: como estou me saindo?",
+  "Faça um resumo dos últimos 14 dias para eu mostrar ao meu médico na consulta.",
 ];
 
 interface QuickPromptsProps {
@@ -19,7 +20,7 @@ interface QuickPromptsProps {
 export function QuickPrompts({ onSelect, disabled }: QuickPromptsProps) {
   return (
     <div className="flex flex-col gap-2">
-      {PROMPTS.map((prompt) => (
+      {PROMPTS.map((prompt, i) => (
         <button
           key={prompt}
           type="button"
@@ -27,7 +28,11 @@ export function QuickPrompts({ onSelect, disabled }: QuickPromptsProps) {
           onClick={() => onSelect(prompt)}
           className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-left text-sm transition-colors hover:border-[var(--primary)]/50 hover:bg-[var(--primary)]/5 disabled:pointer-events-none disabled:opacity-50"
         >
-          <Sparkles className="h-4 w-4 flex-shrink-0 text-[var(--primary)]" />
+          {i === PROMPTS.length - 1 ? (
+            <ClipboardList className="h-4 w-4 flex-shrink-0 text-violet-600" />
+          ) : (
+            <Sparkles className="h-4 w-4 flex-shrink-0 text-[var(--primary)]" />
+          )}
           <span className="text-[var(--foreground)]">{prompt}</span>
         </button>
       ))}

@@ -4,36 +4,43 @@ import { useState, useEffect } from "react";
 import { Timer, X } from "lucide-react";
 import Link from "next/link";
 
-const STORAGE_KEY = "meal_timer_end";
+const STORAGE_KEY_END = "meal_timer_end";
+const STORAGE_KEY_START = "meal_timer_start";
 
 export function startMealTimer(minutes = 60) {
   if (typeof window !== "undefined") {
-    localStorage.setItem(
-      STORAGE_KEY,
-      String(Date.now() + minutes * 60 * 1000)
-    );
+    const now = Date.now();
+    localStorage.setItem(STORAGE_KEY_END, String(now + minutes * 60 * 1000));
+    localStorage.setItem(STORAGE_KEY_START, String(now));
   }
+}
+
+export function getElapsedMinutes(): number | null {
+  if (typeof window === "undefined") return null;
+  const startStr = localStorage.getItem(STORAGE_KEY_START);
+  if (!startStr) return null;
+  const elapsed = Math.round((Date.now() - Number(startStr)) / 60000);
+  return elapsed >= 1 && elapsed <= 480 ? elapsed : null;
 }
 
 export function PostMealTimer() {
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [remaining, setRemaining] = useState(0);
 
-  // Read from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_KEY_END);
     if (stored) {
       const end = Number(stored);
       if (end > Date.now()) {
         setEndsAt(end);
         setRemaining(Math.ceil((end - Date.now()) / 1000));
       } else {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEY_END);
+        localStorage.removeItem(STORAGE_KEY_START);
       }
     }
   }, []);
 
-  // Countdown tick
   useEffect(() => {
     if (!endsAt) return;
     const interval = setInterval(() => {
@@ -41,7 +48,8 @@ export function PostMealTimer() {
       if (rem <= 0) {
         setEndsAt(null);
         setRemaining(0);
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEY_END);
+        localStorage.removeItem(STORAGE_KEY_START);
       } else {
         setRemaining(rem);
       }
@@ -66,14 +74,15 @@ export function PostMealTimer() {
         </p>
       </div>
       <Link
-        href="/registrar/glicemia"
+        href="/registrar/glicemia?from=timer"
         className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white"
       >
         Medir
       </Link>
       <button
         onClick={() => {
-          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(STORAGE_KEY_END);
+          localStorage.removeItem(STORAGE_KEY_START);
           setEndsAt(null);
         }}
         className="p-1 text-violet-400 hover:text-violet-600"

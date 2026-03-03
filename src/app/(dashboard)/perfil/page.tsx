@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, AlertCircle, CheckCircle2, UtensilsCrossed } from "lucide-react";
+import { Save, AlertCircle, CheckCircle2, UtensilsCrossed, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/layout/LogoutButton";
@@ -288,6 +288,27 @@ export default function PerfilPage() {
             </p>
             <p className="text-xs text-[var(--muted-foreground)]">
               Gerencie alimentos frequentes com dados nutricionais
+            </p>
+          </div>
+        </div>
+        <span className="text-lg text-[var(--muted-foreground)]">›</span>
+      </Link>
+
+      {/* Link para modo consulta */}
+      <Link
+        href="/consulta"
+        className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 transition-colors hover:border-[var(--primary)]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)]/10">
+            <ClipboardList className="h-5 w-5 text-[var(--primary)]" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              Resumo para consulta
+            </p>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Resumo de 14 dias para mostrar ao médico
             </p>
           </div>
         </div>
