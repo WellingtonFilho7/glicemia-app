@@ -2,10 +2,11 @@
 
 import { useState, useId } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, AlertCircle, CheckCircle2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MealItemRow, type FormMealItem } from "./MealItemRow";
-import type { MealPeriod } from "@/types";
+import { SavedFoodPicker } from "./SavedFoodPicker";
+import type { MealPeriod, SavedFood } from "@/types";
 
 const PERIODS: { value: MealPeriod; label: string }[] = [
   { value: "breakfast", label: "Café da manhã" },
@@ -47,6 +48,7 @@ export function MealForm() {
   const [addItem, setAddItem] = useState<AddItemForm>(EMPTY_ITEM);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const totalCalories = items.reduce((s, i) => s + (i.calories ?? 0), 0);
@@ -72,6 +74,59 @@ export function MealForm() {
 
   function handleRemoveItem(localId: string) {
     setItems((prev) => prev.filter((i) => i.localId !== localId));
+  }
+
+  function handleSavedFoodSelect(food: SavedFood) {
+    const grams = food.default_portion_grams;
+    const cals =
+      grams != null && food.calories_per_100g != null
+        ? Math.round((food.calories_per_100g * grams) / 100)
+        : null;
+    const carbs =
+      grams != null && food.carbs_per_100g != null
+        ? Number(((food.carbs_per_100g * grams) / 100).toFixed(1))
+        : null;
+
+    setAddItem({
+      name: food.name,
+      quantity_grams: grams != null ? String(grams) : "",
+      quantity_description: "",
+      calories: cals != null ? String(cals) : "",
+      carbs_grams: carbs != null ? String(carbs) : "",
+    });
+    setShowAddItem(true);
+  }
+
+  async function handleEstimateNutrition() {
+    if (!addItem.name.trim()) return;
+    setEstimating(true);
+    try {
+      const res = await fetch("/api/ai/estimate-nutrition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: addItem.name.trim(),
+          quantity_grams: addItem.quantity_grams
+            ? Number(addItem.quantity_grams)
+            : undefined,
+          quantity_description: addItem.quantity_description.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAddItem((prev) => ({
+          ...prev,
+          calories:
+            data.calories != null ? String(data.calories) : prev.calories,
+          carbs_grams:
+            data.carbs_grams != null
+              ? String(data.carbs_grams)
+              : prev.carbs_grams,
+        }));
+      }
+    } finally {
+      setEstimating(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -173,7 +228,9 @@ export function MealForm() {
                 inputMode="numeric"
                 placeholder="Gramas (ex: 57)"
                 value={addItem.quantity_grams}
-                onChange={(e) => setAddItem((p) => ({ ...p, quantity_grams: e.target.value }))}
+                onChange={(e) =>
+                  setAddItem((p) => ({ ...p, quantity_grams: e.target.value }))
+                }
                 className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                 min={0}
               />
@@ -181,17 +238,38 @@ export function MealForm() {
                 type="text"
                 placeholder="Ou descreva (ex: 2 ovos)"
                 value={addItem.quantity_description}
-                onChange={(e) => setAddItem((p) => ({ ...p, quantity_description: e.target.value }))}
+                onChange={(e) =>
+                  setAddItem((p) => ({
+                    ...p,
+                    quantity_description: e.target.value,
+                  }))
+                }
                 className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
             </div>
+
+            {/* Botão de estimativa IA */}
+            {addItem.name.trim() && (
+              <button
+                type="button"
+                onClick={handleEstimateNutrition}
+                disabled={estimating}
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 py-1.5 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-60"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {estimating ? "Estimando..." : "Estimar com IA"}
+              </button>
+            )}
+
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="number"
                 inputMode="numeric"
                 placeholder="Calorias (kcal)"
                 value={addItem.calories}
-                onChange={(e) => setAddItem((p) => ({ ...p, calories: e.target.value }))}
+                onChange={(e) =>
+                  setAddItem((p) => ({ ...p, calories: e.target.value }))
+                }
                 className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                 min={0}
               />
@@ -201,7 +279,9 @@ export function MealForm() {
                 step="0.1"
                 placeholder="Carbs (g)"
                 value={addItem.carbs_grams}
-                onChange={(e) => setAddItem((p) => ({ ...p, carbs_grams: e.target.value }))}
+                onChange={(e) =>
+                  setAddItem((p) => ({ ...p, carbs_grams: e.target.value }))
+                }
                 className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                 min={0}
               />
@@ -220,21 +300,27 @@ export function MealForm() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => { setShowAddItem(false); setAddItem(EMPTY_ITEM); }}
+                onClick={() => {
+                  setShowAddItem(false);
+                  setAddItem(EMPTY_ITEM);
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setShowAddItem(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border)] py-3 text-sm font-medium text-[var(--muted-foreground)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
-          >
-            <Plus className="h-4 w-4" />
-            Adicionar alimento
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAddItem(true)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border)] py-3 text-sm font-medium text-[var(--muted-foreground)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </button>
+            <SavedFoodPicker onSelect={handleSavedFoodSelect} />
+          </div>
         )}
 
         {/* Totais */}
