@@ -33,7 +33,9 @@ export function MealItemRow({ item, onRemove }: MealItemRowProps) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-[var(--foreground)]">
           {item.name}
-          {qty ? <span className="ml-1 text-[var(--muted-foreground)]">{qty}</span> : null}
+          {qty ? (
+            <span className="ml-1 text-[var(--muted-foreground)]">{qty}</span>
+          ) : null}
         </p>
         {macros && (
           <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">{macros}</p>

@@ -17,7 +17,7 @@ export function GlucoseBadge({ value, isAboveLimit, className }: GlucoseBadgePro
         className
       )}
     >
-      {value} mg/dL
+      {value} mg/dL · {isAboveLimit ? "Acima" : "Normal"}
     </span>
   );
 }

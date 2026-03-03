@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MealItemRow, type FormMealItem } from "./MealItemRow";
 import type { MealPeriod } from "@/types";
@@ -15,58 +15,62 @@ const PERIODS: { value: MealPeriod; label: string }[] = [
 ];
 
 function detectPeriod(): MealPeriod {
-  const hour = new Date().getHours();
-  if (hour < 10) return "breakfast";
-  if (hour < 14) return "lunch";
-  if (hour < 20) return "dinner";
+  const h = new Date().getHours();
+  if (h < 10) return "breakfast";
+  if (h < 14) return "lunch";
+  if (h < 19) return "dinner";
   return "snack";
 }
 
-let itemCounter = 0;
-function nextId() {
-  return `item-${++itemCounter}`;
+interface AddItemForm {
+  name: string;
+  quantity_grams: string;
+  quantity_description: string;
+  calories: string;
+  carbs_grams: string;
 }
+
+const EMPTY_ITEM: AddItemForm = {
+  name: "",
+  quantity_grams: "",
+  quantity_description: "",
+  calories: "",
+  carbs_grams: "",
+};
 
 export function MealForm() {
   const router = useRouter();
-  const [period, setPeriod] = useState<MealPeriod>(detectPeriod());
+  const uid = useId();
+  const [period, setPeriod] = useState<MealPeriod>(detectPeriod);
   const [items, setItems] = useState<FormMealItem[]>([]);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [addItem, setAddItem] = useState<AddItemForm>(EMPTY_ITEM);
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Add-item form state
-  const [itemName, setItemName] = useState("");
-  const [itemGrams, setItemGrams] = useState("");
-  const [itemDesc, setItemDesc] = useState("");
-  const [itemCalories, setItemCalories] = useState("");
-  const [itemCarbs, setItemCarbs] = useState("");
 
   const totalCalories = items.reduce((s, i) => s + (i.calories ?? 0), 0);
   const totalCarbs = items.reduce((s, i) => s + (i.carbs_grams ?? 0), 0);
 
-  function addItem() {
-    if (!itemName.trim()) return;
-    setItems((prev) => [
-      ...prev,
-      {
-        localId: nextId(),
-        name: itemName.trim(),
-        quantity_grams: itemGrams ? Number(itemGrams) : null,
-        quantity_description: itemDesc.trim(),
-        calories: itemCalories ? Number(itemCalories) : null,
-        carbs_grams: itemCarbs ? Number(itemCarbs) : null,
-      },
-    ]);
-    setItemName("");
-    setItemGrams("");
-    setItemDesc("");
-    setItemCalories("");
-    setItemCarbs("");
+  function handleAddItem() {
+    const name = addItem.name.trim();
+    if (!name) return;
+
+    const newItem: FormMealItem = {
+      localId: `${uid}-${Date.now()}`,
+      name,
+      quantity_grams: addItem.quantity_grams ? Number(addItem.quantity_grams) : null,
+      quantity_description: addItem.quantity_description.trim(),
+      calories: addItem.calories ? Number(addItem.calories) : null,
+      carbs_grams: addItem.carbs_grams ? Number(addItem.carbs_grams) : null,
+    };
+
+    setItems((prev) => [...prev, newItem]);
+    setAddItem(EMPTY_ITEM);
     setShowAddItem(false);
   }
 
-  function removeItem(localId: string) {
+  function handleRemoveItem(localId: string) {
     setItems((prev) => prev.filter((i) => i.localId !== localId));
   }
 
@@ -88,7 +92,14 @@ export function MealForm() {
         period,
         description,
         eaten_at: new Date().toISOString(),
-        items: items.map(({ localId: _id, ...rest }) => rest),
+        notes: notes.trim() || null,
+        items: items.map((i) => ({
+          name: i.name,
+          quantity_grams: i.quantity_grams,
+          quantity_description: i.quantity_description || null,
+          calories: i.calories,
+          carbs_grams: i.carbs_grams,
+        })),
       }),
     });
 
@@ -112,7 +123,7 @@ export function MealForm() {
         </div>
       )}
 
-      {/* Period selector */}
+      {/* Período */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 space-y-3">
         <p className="text-sm font-semibold text-[var(--foreground)]">Período</p>
         <div className="grid grid-cols-2 gap-2">
@@ -133,52 +144,45 @@ export function MealForm() {
         </div>
       </div>
 
-      {/* Items list */}
+      {/* Lista de itens */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 space-y-3">
-        <p className="text-sm font-semibold text-[var(--foreground)]">
-          Alimentos
-          {items.length > 0 && (
-            <span className="ml-1.5 font-normal text-[var(--muted-foreground)]">
-              ({items.length})
-            </span>
-          )}
-        </p>
+        <p className="text-sm font-semibold text-[var(--foreground)]">Alimentos</p>
 
         {items.length > 0 && (
           <div className="space-y-2">
             {items.map((item) => (
-              <MealItemRow key={item.localId} item={item} onRemove={removeItem} />
+              <MealItemRow key={item.localId} item={item} onRemove={handleRemoveItem} />
             ))}
           </div>
         )}
 
-        {/* Add item inline form */}
+        {/* Formulário inline de adicionar item */}
         {showAddItem ? (
-          <div className="rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-3 space-y-3">
+          <div className="rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-3 space-y-2">
             <input
               type="text"
               placeholder="Nome do alimento *"
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+              value={addItem.name}
+              onChange={(e) => setAddItem((p) => ({ ...p, name: e.target.value }))}
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               autoFocus
             />
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="number"
-                inputMode="decimal"
-                placeholder="Gramas (opcional)"
-                value={itemGrams}
-                onChange={(e) => setItemGrams(e.target.value)}
-                className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                inputMode="numeric"
+                placeholder="Gramas (ex: 57)"
+                value={addItem.quantity_grams}
+                onChange={(e) => setAddItem((p) => ({ ...p, quantity_grams: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                 min={0}
               />
               <input
                 type="text"
-                placeholder="Ou descreva (ex: 1 fatia)"
-                value={itemDesc}
-                onChange={(e) => setItemDesc(e.target.value)}
-                className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                placeholder="Ou descreva (ex: 2 ovos)"
+                value={addItem.quantity_description}
+                onChange={(e) => setAddItem((p) => ({ ...p, quantity_description: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -186,26 +190,27 @@ export function MealForm() {
                 type="number"
                 inputMode="numeric"
                 placeholder="Calorias (kcal)"
-                value={itemCalories}
-                onChange={(e) => setItemCalories(e.target.value)}
-                className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                value={addItem.calories}
+                onChange={(e) => setAddItem((p) => ({ ...p, calories: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                 min={0}
               />
               <input
                 type="number"
                 inputMode="decimal"
-                placeholder="Carboidratos (g)"
-                value={itemCarbs}
-                onChange={(e) => setItemCarbs(e.target.value)}
-                className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+                step="0.1"
+                placeholder="Carbs (g)"
+                value={addItem.carbs_grams}
+                onChange={(e) => setAddItem((p) => ({ ...p, carbs_grams: e.target.value }))}
+                className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
                 min={0}
               />
             </div>
             <div className="flex gap-2">
               <Button
                 type="button"
-                onClick={addItem}
-                disabled={!itemName.trim()}
+                onClick={handleAddItem}
+                disabled={!addItem.name.trim()}
                 size="sm"
                 className="flex-1"
               >
@@ -215,16 +220,9 @@ export function MealForm() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setShowAddItem(false);
-                  setItemName("");
-                  setItemGrams("");
-                  setItemDesc("");
-                  setItemCalories("");
-                  setItemCarbs("");
-                }}
+                onClick={() => { setShowAddItem(false); setAddItem(EMPTY_ITEM); }}
               >
-                Cancelar
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -232,36 +230,41 @@ export function MealForm() {
           <button
             type="button"
             onClick={() => setShowAddItem(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border)] py-3 text-sm text-[var(--muted-foreground)] transition-colors hover:border-[var(--primary)]/50 hover:text-[var(--primary)]"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border)] py-3 text-sm font-medium text-[var(--muted-foreground)] transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
           >
             <Plus className="h-4 w-4" />
             Adicionar alimento
           </button>
         )}
+
+        {/* Totais */}
+        {items.length > 0 && (totalCalories > 0 || totalCarbs > 0) && (
+          <div className="flex items-center justify-between rounded-lg bg-[var(--muted)]/20 px-3 py-2 text-sm">
+            <span className="font-semibold text-[var(--foreground)]">Total</span>
+            <span className="text-[var(--muted-foreground)]">
+              {totalCalories > 0 && `${totalCalories} kcal`}
+              {totalCalories > 0 && totalCarbs > 0 && " · "}
+              {totalCarbs > 0 && `${totalCarbs}g carb`}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Totals */}
-      {(totalCalories > 0 || totalCarbs > 0) && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-            Total da refeição
-          </p>
-          <div className="flex gap-4">
-            {totalCalories > 0 && (
-              <div>
-                <p className="text-xl font-bold text-[var(--foreground)]">{totalCalories}</p>
-                <p className="text-xs text-[var(--muted-foreground)]">kcal</p>
-              </div>
-            )}
-            {totalCarbs > 0 && (
-              <div>
-                <p className="text-xl font-bold text-[var(--foreground)]">{totalCarbs.toFixed(1)}g</p>
-                <p className="text-xs text-[var(--muted-foreground)]">carboidratos</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Observação */}
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 space-y-2">
+        <label className="text-sm font-semibold text-[var(--foreground)]">
+          Observação{" "}
+          <span className="font-normal text-[var(--muted-foreground)]">(opcional)</span>
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Ex: comi mais devagar, senti-me pesada depois"
+          rows={2}
+          className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)]"
+          maxLength={500}
+        />
+      </div>
 
       <Button
         type="submit"
