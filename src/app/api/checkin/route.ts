@@ -3,6 +3,41 @@ import { createClient } from "@/lib/supabase/server";
 import { CreateDailyCheckinSchema } from "@/lib/validators/checkin";
 import { z } from "zod";
 
+export async function GET(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const days = Number(searchParams.get("days") ?? "7");
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const { data, error } = await supabase
+      .from("daily_checkins")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("date", since.toISOString().split("T")[0])
+      .order("date", { ascending: true });
+
+    if (error) throw error;
+
+    return NextResponse.json({ checkins: data });
+  } catch (error) {
+    console.error("Erro ao buscar check-ins:", error);
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      { status: 500 }
+    );
+  }
+}
+
 const RequestBodySchema = CreateDailyCheckinSchema.extend({
   fasting_glucose: z.number().int().min(40).max(500).nullable().optional(),
 });

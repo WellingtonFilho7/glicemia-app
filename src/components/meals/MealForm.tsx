@@ -2,10 +2,12 @@
 
 import { useState, useId } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, AlertCircle, CheckCircle2, X, Sparkles } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, X, Sparkles, Timer } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MealItemRow, type FormMealItem } from "./MealItemRow";
 import { SavedFoodPicker } from "./SavedFoodPicker";
+import { startMealTimer } from "@/components/glucose/PostMealTimer";
 import type { MealPeriod, SavedFood } from "@/types";
 
 const PERIODS: { value: MealPeriod; label: string }[] = [
@@ -50,6 +52,7 @@ export function MealForm() {
   const [loading, setLoading] = useState(false);
   const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   const totalCalories = items.reduce((s, i) => s + (i.calories ?? 0), 0);
   const totalCarbs = items.reduce((s, i) => s + (i.carbs_grams ?? 0), 0);
@@ -165,8 +168,41 @@ export function MealForm() {
       return;
     }
 
-    router.push("/");
-    router.refresh();
+    setSaved(true);
+    setLoading(false);
+  }
+
+  if (saved) {
+    return (
+      <div className="flex flex-col items-center gap-5 py-10 text-center">
+        <CheckCircle2 className="h-14 w-14 text-green-500" />
+        <div>
+          <p className="text-lg font-semibold text-[var(--foreground)]">
+            Refeição salva!
+          </p>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            Deseja iniciar o timer para medir a glicemia?
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            startMealTimer(60);
+            router.push("/");
+            router.refresh();
+          }}
+          className="w-full h-12 text-base"
+        >
+          <Timer className="mr-2 h-5 w-5" />
+          Iniciar timer (60 min)
+        </Button>
+        <Link
+          href="/"
+          className="text-sm text-[var(--muted-foreground)] underline-offset-2 hover:underline"
+        >
+          Voltar sem timer
+        </Link>
+      </div>
+    );
   }
 
   return (

@@ -4,6 +4,7 @@ import { Droplets, UtensilsCrossed, Scale, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { MorningCheckin } from "@/components/checkin/MorningCheckin";
 import { CheckinSummary } from "@/components/checkin/CheckinSummary";
+import { PostMealTimer } from "@/components/glucose/PostMealTimer";
 import type { DailyCheckin, GlucoseEntry, GlucoseMealType, Meal, WeightEntry } from "@/types";
 
 const MEAL_LABELS: Record<GlucoseMealType, string> = {
@@ -96,6 +97,8 @@ export default async function DashboardPage() {
           })}
         </p>
       </div>
+
+      <PostMealTimer />
 
       {hasAlerts && (
         <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">

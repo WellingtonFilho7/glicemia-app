@@ -2,6 +2,41 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { CreateMealSchema } from "@/lib/validators/meals";
 
+export async function GET(request: Request) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const days = Number(searchParams.get("days") ?? "7");
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const { data, error } = await supabase
+      .from("meals")
+      .select("*, items:meal_items(*)")
+      .eq("user_id", user.id)
+      .gte("eaten_at", since.toISOString())
+      .order("eaten_at", { ascending: false });
+
+    if (error) throw error;
+
+    return NextResponse.json({ meals: data });
+  } catch (error) {
+    console.error("Erro ao buscar refeições:", error);
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
