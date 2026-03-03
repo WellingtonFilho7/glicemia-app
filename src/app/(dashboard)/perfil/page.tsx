@@ -1,6 +1,13 @@
-import { User, Settings, Baby, Pill, LogOut } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { User, Settings, Baby, Pill } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LogoutButton } from "@/components/layout/LogoutButton";
 
 export const metadata = { title: "Perfil — Glicemia App" };
 
@@ -9,12 +16,11 @@ export default function PerfilPage() {
     <div className="px-4 py-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-[var(--foreground)]">Perfil</h1>
-        <p className="text-sm text-[var(--muted-foreground)] mt-1">
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
           Configurações e dados pessoais
         </p>
       </div>
 
-      {/* Resumo do perfil */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -24,17 +30,20 @@ export default function PerfilPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[var(--muted-foreground)]">Semana gestacional</span>
+            <span className="text-sm text-[var(--muted-foreground)]">
+              Semana gestacional
+            </span>
             <Badge variant="secondary">Configure seu perfil</Badge>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[var(--muted-foreground)]">Espondilite anquilosante</span>
+            <span className="text-sm text-[var(--muted-foreground)]">
+              Espondilite anquilosante
+            </span>
             <Badge variant="outline">Sim</Badge>
           </div>
         </CardContent>
       </Card>
 
-      {/* Limites de glicemia */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -51,13 +60,14 @@ export default function PerfilPage() {
             <Badge variant="outline">95 mg/dL</Badge>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-[var(--muted-foreground)]">Pós-refeição</span>
+            <span className="text-sm text-[var(--muted-foreground)]">
+              Pós-refeição
+            </span>
             <Badge variant="outline">140 mg/dL</Badge>
           </div>
         </CardContent>
       </Card>
 
-      {/* Medicamentos */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -69,13 +79,12 @@ export default function PerfilPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-[var(--muted-foreground)] italic">
-            Em construção — UpdateProfileForm
+          <p className="text-sm italic text-[var(--muted-foreground)]">
+            Em construção — Sessão futura
           </p>
         </CardContent>
       </Card>
 
-      {/* Maternidade */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -84,19 +93,13 @@ export default function PerfilPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-[var(--muted-foreground)] italic">
+          <p className="text-sm italic text-[var(--muted-foreground)]">
             Em construção — data provável do parto, semana inicial
           </p>
         </CardContent>
       </Card>
 
-      {/* Sair */}
-      <button className="flex w-full items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 text-left hover:bg-red-50 hover:border-red-200 transition-colors group">
-        <LogOut className="h-5 w-5 text-[var(--muted-foreground)] group-hover:text-red-600" />
-        <span className="text-sm font-medium text-[var(--foreground)] group-hover:text-red-600">
-          Sair da conta
-        </span>
-      </button>
+      <LogoutButton />
     </div>
   );
 }
